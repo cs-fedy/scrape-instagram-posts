@@ -16,4 +16,4 @@ scrape instagram posts and save them in a json file
 **created at 🌙 with 💻 and ❤ by f0ody**
 * **Fedi abdouli** - **scrape instagram posts** - [fedi abdouli](https://github.com/cs-fedy)
 * my twitter account [FediAbdouli](https://www.twitter.com/FediAbdouli)
-* my instagram account [fedyy_the_walking_dead](https://www.instagram.com/f0odyy) 
+* my instagram account [f0odyy](https://www.instagram.com/f0odyy) 
