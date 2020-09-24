@@ -1,36 +1,44 @@
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from bs4 import BeautifulSoup
 from time import sleep
 import json
 
 # TODO: use multiple threads to scrape data from posts.
-# TODO: allow user to login to his account to explore private accounts
+# TODO: make this script as a cli using typer
 
 
-class BasePage:
-    def load_full_page_source_code(self, callback=None):
-        if callback:
-            callback()
-        return self.browser.page_source
-
-    def wait_until_page_is_loaded(self, page_url):
-        self.browser.get(page_url)
-        sleep(10)
-        print(f"@@@ {page_url} is loaded @@@")
+def load_full_page_source_code(browser, callback=None):
+    if callback:
+        callback()
+    return browser.page_source
 
 
-class InstagramPostScraper(BasePage):
-    def __init__(self, post_url, browser):
+def wait_until_page_is_loaded(browser, page_url):
+    browser.get(page_url)
+    sleep(10)
+    print(f"@@@ {page_url} is loaded @@@")
+
+
+def create_headless_browser():
+    # options = Options()
+    # options.set_headless()
+    # assert options.headless  # assert Operating in headless mode
+    # return webdriver.Chrome(options=options)
+    return webdriver.Chrome()
+
+
+class InstagramPostScraper:
+    def __init__(self, post_url, browser=None):
         self.post_url = post_url
-        BasePage.__init__(self)
         if not browser:
-            self.browser = webdriver.Chrome()
+            self.browser = create_headless_browser()
         else:
             self.browser = browser
 
     def get_post_details(self):
-        self.wait_until_page_is_loaded(self.post_url)
-        source_code = self.load_full_page_source_code()
+        wait_until_page_is_loaded(self.browser, self.post_url)
+        source_code = load_full_page_source_code(self.browser)
         soup = BeautifulSoup(source_code, 'html.parser')
         article = soup.find("article")
         # * get post picture
@@ -58,11 +66,10 @@ class InstagramPostScraper(BasePage):
         }
 
 
-class InstagramAccountScraper(BasePage):
+class InstagramAccountScraper:
     def __init__(self, account_url, browser):
         self.account_url = account_url
         self.browser = browser
-        BasePage.__init__(self)
 
     def __scroll_to_the_buttom(self):
         # * scroll to buttom of the webpage
@@ -147,23 +154,53 @@ class InstagramAccountScraper(BasePage):
             json.dump(data, json_file)
 
     def __call__(self):
-        self.wait_until_page_is_loaded(self.account_url)
-        source_code = self.load_full_page_source_code()
+        wait_until_page_is_loaded(self.browser, self.account_url)
+        source_code = load_full_page_source_code(self.browser)
         account_details = self.__get_profile_details(source_code)
         posts_details = self.__get_posts_details(source_code)
         self.__form_final_data(account_details, posts_details)
 
 
-def create_headless_browser():
-    options = Options()
-    options.set_headless()
-    assert options.headless  # assert Operating in headless mode
-    driver = webdriver.Chrome(options=options)
-    return webdriver.Chrome()
+class InstagramLogIn:
+    def __init__(self, username, password, browser):
+        self.browser = browser
+        self.username = username
+        self.password = password
+        self.instagram_url = "https://www.instagram.com/"
+
+    def __log_in(self):
+        # * load page
+        wait_until_page_is_loaded(self.browser, self.instagram_url)
+
+        # * get username element and fill it
+        username_element = self.browser.find_element_by_css_selector(
+            "input[name=username]")
+        username_element.send_keys(self.username)
+        sleep(2)
+
+        # * get password element and fill it
+        password_element = self.browser.find_element_by_css_selector(
+            "input[name=password]")
+        password_element.send_keys(self.password)
+        sleep(2)
+
+        # * get submit element and submit
+        submit_element = self.browser.find_elements_by_css_selector(
+            "button")[1]
+        submit_element.click()
+        sleep(2)
+
+        if "Sorry, your password was incorrect." in self.browser.page_source:
+            raise Exception("check your username or password")
+
+    def __call__(self):
+        self.__log_in()
 
 
 if __name__ == "__main__":
     browser = create_headless_browser()
+    log = InstagramLogIn("your username", "your password here", browser)
+    log()
     url = "https://www.instagram.com/medium/?hl=en"
     instagram_scraper = InstagramAccountScraper(url, browser)
     instagram_scraper()
