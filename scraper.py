@@ -7,8 +7,6 @@ import json
 # TODO: scroll to the buttom of the page and get all post url.
 # TODO: allow user to login to his account to explore private accounts
 # TODO: make a class that scrape post data
-# TODO: add account status verified or not
-# TODO: scrape instagram account picture
 
 
 class InstagramAccountScraper:
@@ -25,24 +23,28 @@ class InstagramAccountScraper:
 
     def __load_full_page_source_code(self):
         # * scroll to buttom of the webpage
-        scrolling_script = "window.scrollTo(0,document.body.scrollHeight)"
-        content_page = ""
-        while content_page != self.browser.page_source:
-            content_page = self.browser.page_source
-            self.browser.execute_script(scrolling_script)
-            try:
-                see_more = self.browser.find_element_by_xpath("//*[contains(text(), 'Show More Posts from')]")
-                see_more.click()
-            except:
-                pass
+        # scrolling_script = "window.scrollTo(0,document.body.scrollHeight)"
+        # content_page = ""
+        # while content_page != self.browser.page_source:
+        #     content_page = self.browser.page_source
+        #     self.browser.execute_script(scrolling_script)
+        #     try:
+        #         see_more = self.browser.find_element_by_xpath("//*[contains(text(), 'Show More Posts from')]")
+        #         see_more.click()
+        #     except:
+        #         pass
 
-            sleep(5)
+        #     sleep(5)
         print("@@@ page is fully loaded @@@")
         return self.browser.page_source
 
     def __get_profile_details(self, source_code):
         soup = BeautifulSoup(source_code, "html.parser")
         account_details_section = soup.find_all("section")[-1]
+
+        # * get profile picture
+        profile_pict_element = soup.select("header img")[0]
+        profile_pict = profile_pict_element["src"]
 
         statistics_element = account_details_section.find("ul")
         # * get account statistics
@@ -55,11 +57,26 @@ class InstagramAccountScraper:
         # * get account name
         account_name = details_element.find("h1").getText()
 
+        # * get account username
+        account_username_element = soup.select_one("header section h2")
+        account_username = account_username_element.getText()
+
+        # * get account status: verified or not
+        account_status_parent = account_username_element.find_next_sibling()
+        account_status_element = account_status_parent.select_one("span")
+        if account_status_element:
+            account_status = account_status_element.getText()
+        else:
+            account_status = "not verified"
+        
         # * get account bio
         bio = details_element.find("span").getText()
 
         return {
             "account_name": account_name,
+            "account_username": account_username,
+            "account_status": account_status,
+            "profile_pict": profile_pict,
             "posts_count": posts,
             "followers_count": followers,
             "following_count": following,
