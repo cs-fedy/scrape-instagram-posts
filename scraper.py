@@ -36,6 +36,13 @@ class InstagramPostScraper:
         else:
             self.browser = browser
 
+    def __check_video_or_pict(self):
+        try:
+            element = self.browser.find_element_by_css_selector("article video")
+        except:
+            element = self.browser.find_elements_by_css_selector("article img")[1]
+        return element.get_attribute("src")
+
     def get_post_details(self):
         wait_until_page_is_loaded(self.browser, self.post_url)
         source_code = load_full_page_source_code(self.browser)
@@ -47,9 +54,8 @@ class InstagramPostScraper:
             go_to_the_right_element = self.browser.find_element_by_css_selector(
                 ".coreSpriteRightChevron")
             while go_to_the_right_element:
-                picture_element = self.browser.find_elements_by_css_selector(
-                    "article img")[1]
-                pictures_list.append(picture_element.get_attribute("src"))
+                picture_src = self.__check_video_or_pict()
+                pictures_list.append(picture_src)
                 go_to_the_right_element.click()
                 sleep(2)
                 try:
@@ -58,8 +64,8 @@ class InstagramPostScraper:
                 except:
                     go_to_the_right_element = None
         except:
-            pictures = article.find_all("img")[1]
-            pictures_list.append(pictures["src"])
+            picture_src = self.__check_video_or_pict()
+            pictures_list.append(picture_src)
 
         # * get post description
         description_element = soup.find("h2").find_next_sibling()
@@ -220,4 +226,3 @@ if __name__ == "__main__":
     url = "https://www.instagram.com/medium/?hl=en"
     instagram_scraper = InstagramAccountScraper(url, browser)
     instagram_scraper()
-
