@@ -42,8 +42,24 @@ class InstagramPostScraper:
         soup = BeautifulSoup(source_code, 'html.parser')
         article = soup.find("article")
         # * get post picture
-        pictures = article.find_all("img")[1]
-        post_pict = pictures["src"]
+        pictures_list = []
+        try:
+            go_to_the_right_element = self.browser.find_element_by_css_selector(
+                ".coreSpriteRightChevron")
+            while go_to_the_right_element:
+                picture_element = self.browser.find_elements_by_css_selector(
+                    "article img")[1]
+                pictures_list.append(picture_element.get_attribute("src"))
+                go_to_the_right_element.click()
+                sleep(2)
+                try:
+                    go_to_the_right_element = self.browser.find_element_by_css_selector(
+                        ".coreSpriteRightChevron")
+                except:
+                    go_to_the_right_element = None
+        except:
+            pictures = article.find_all("img")[1]
+            pictures_list.append(pictures["src"])
 
         # * get post description
         description_element = soup.find("h2").find_next_sibling()
@@ -59,7 +75,7 @@ class InstagramPostScraper:
 
         return {
             "url": self.post_url,
-            "picture_url": post_pict,
+            "picture_url": pictures_list,
             "description": description,
             "likes_count": likes,
             "share_date": date
@@ -204,3 +220,4 @@ if __name__ == "__main__":
     url = "https://www.instagram.com/medium/?hl=en"
     instagram_scraper = InstagramAccountScraper(url, browser)
     instagram_scraper()
+
